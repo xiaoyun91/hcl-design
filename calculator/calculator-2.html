@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en"  style="font-size: 10px;">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <title>calculator2</title>
+    </head>
+    <body>
+    <div class="calculator">
+       <FORM name="mycalc">
+        <input name="mydisp" type="Text" size=10 value="0" class="output-box"> <br>
+        <div class="basic-button">
+        <input type="Button" value="7" onclick="digitKey(7)">
+        <input type="Button" value="8" onclick="digitKey(8)">
+        <input type="Button" value="9" onclick="digitKey(9)">
+        <input type="Button" class="opr-button" value="X" onclick="oprKey('X')"> 
+        </div>
+        <div class="basic-button">
+        <input type="Button" value="4" onclick="digitKey(4)">
+        <input type="Button" value="5" onclick="digitKey(5)">
+        <input type="Button" value="6" onclick="digitKey(6)">
+        <input type="Button" class="opr-button" value="/" onclick="oprKey('/')"> 
+        </div>
+        <div class="basic-button">
+        <input type="Button" value="1" onclick="digitKey(1)">
+        <input type="Button" value="2" onclick="digitKey(2)">
+        <input type="Button" value="3" onclick="digitKey(3)">
+        <input type="Button" class="opr-button" value="-" onclick="oprKey('-')"> 
+         </div>
+         <div class="basic-button">
+        <input type="Button" value="0" onclick="digitKey(0)">
+        <input type="Button" class="opr-button" value="EC/C" onclick="resetValue()">
+        <input type="Button" class="opr-button" value="enter" onclick="oprKey('enter')">
+        <input type="Button" class="opr-button" value="+" onclick="oprKey('+')">
+        </div>
+        </FORM>
+        </div>
+        <script>
+        function display(a) { 
+            document.forms['mycalc']['mydisp'].value=a; 
+        }
+        var opr = ' ', stack = [], num= 0,ans;
+
+        function apply (a,op,n) {
+            switch (op) {
+                case "+": return a += n; 
+                case "-": return a -= n;
+                case "X": return a *= n;
+                case "/": return a /= n;
+            } 
+        }
+        function digitKey (key) {
+            num = key; 
+            display(num);
+            stack.push(num);
+            console.log(stack)
+        } 
+        function oprKey (key) {
+               opr= key;
+            if(opr == ' ') {
+                ans = num;
+            }else if(opr == 'enter'){
+                ans = stack[stack.length-1]|0
+            }else  {
+                if(stack.length>1){
+                let temp1 = stack.pop()
+                let temp2 = stack.pop()
+                ans = apply(temp2,opr,temp1);
+                }else{
+                    ans =  stack[stack.length-1]//保护一下栈长度小于2的误操作
+                    return;
+                }
+            }
+            display(ans);
+            if(key !='enter'){
+                stack.push(ans);
+                console.log(stack)
+            }
+        }
+
+        function resetValue () {
+            opr = ' '; 
+            stack = []; 
+            num= 0;
+            ans =0;
+            display(ans);
+        }
+        </script>
+        <style>
+            html{
+      overflow: hidden;
+    }
+    body{
+        background: rgba(255,255,255,1);
+        overflow: hidden;
+    }
+    .calculator{
+        max-width:37.5rem;
+        max-height:75rem;
+        background: rgba(0,0,0,0.9);
+        border-radius: 20px;
+        padding: 20px 15px 20px 15px;
+    }
+    .output-box{
+      margin-top: 23rem;
+      margin-bottom: 3rem;
+      text-align: right;
+      padding-right: 10px;
+      border: none;
+      background: none;
+      width: 90%;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      font-family: sans-serif;
+    }
+    .basic-button{
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+    .basic-button input{
+      display: inline-block;
+      margin: 5px;
+      border-radius: 5px;
+      box-sizing: border-box;
+      border: none;
+      background-color: rgba(255,255,255,0.1);
+      text-align: center;
+      padding: 0px;
+      color: #fff;
+      min-width: 6.8rem;
+      min-height: 6.8rem;
+    }
+    .basic-button .opr-button{
+        background-color: rgba(227, 116, 37, 0.848);
+    }
+        </style>
+        </body>
+</html>

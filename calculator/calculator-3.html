@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en"  style="font-size: 10px;">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>calculator3</title>
+</head>
+<body>
+<div class="calculator" id="myCal">
+    <div class="menu-bar">
+      <img alt="" src="./menu.png" onclick="exportCsv()">
+      <img alt="" src="./setting.png" onclick="setBackground()">
+      <div class="export-menu" id="exportMenu">
+        <div class="title" onclick="exportLog()">Export CSV</div> 
+      </div>
+      <div class="set-menu" id="settingBar">
+        <div class="title">Background</div> 
+        <div class="white" onclick="setWhite()"></div>
+        <div class="black" onclick="setBlack()"></div>
+      </div>
+    </div>
+    <form name="mycalc">
+    <input name="mydisp" type="Text" size="10" value="0" class="output-box" />
+    <div class="basic-button">
+        <input type="Button" value="7" onclick="digitKey(7)" />
+        <input type="Button" value="8" onclick="digitKey(8)" />
+        <input type="Button" value="9" onclick="digitKey(9)" />
+        <input type="Button" class="opr-button" value="/" onclick="oprKey('/')" />
+        <input type="Button" class="opr-button" value="." onclick="pointKey('.')" />
+    </div>
+    <div class="basic-button">
+        <input type="Button" value="4" onclick="digitKey(4)" />
+        <input type="Button" value="5" onclick="digitKey(5)" />
+        <input type="Button" value="6" onclick="digitKey(6)" />
+        <input type="Button" class="opr-button" value="X" onclick="oprKey('X')" />
+        <input type="Button" class="opr-button" value=")" onclick='oprKey(")")' />
+    </div>
+    <div class="basic-button">
+        <input type="Button" value="1" onclick="digitKey(1)" />
+        <input type="Button" value="2" onclick="digitKey(2)" />
+        <input type="Button" value="3" onclick="digitKey(3)" />
+        <input type="Button" class="opr-button" value="+" onclick="oprKey('+')" />
+        <input type="Button" class="opr-button" value="(" onclick='oprKey("(")' />
+    </div>
+    <div class="basic-button">
+        <input type="Button" value="0" onclick="digitKey(0)" />
+        <input type="Button" value="CE/C" onclick="resetButton()" />
+        <input type="Button" value="MR/M" onclick="memoryButton()" />
+        <input type="Button" class="opr-button" value="-" onclick="oprKey('-')" /> 
+        <input type="Button" class="equal-button" value="=" onclick="oprKey('=')" />
+    </div>
+    </form>
+</div>
+  <script>
+    function display(a) {
+      document.forms["mycalc"]["mydisp"].value =parseFloat(a);
+    }
+    var opr = " ";
+    var num = null;
+    var ans = '';
+    var n = 0; //layer
+    var j = 0;
+    var numArr = new Array(); //num arr
+    var oprArr = new Array(); // opr arr
+    var pointFlag = true// input dot flag
+    var exportArr = []
+    
+    //setting pannel
+    function setBackground(){
+      if( document.getElementById('settingBar').style.display=="block"){
+         document.getElementById('settingBar').style.display="none"
+      }else{
+        document.getElementById('settingBar').style.display="block"
+      }  
+    }
+    //menu panel
+    function exportCsv(){
+      if( document.getElementById('exportMenu').style.display=="block"){
+         document.getElementById('exportMenu').style.display="none"
+      }else{
+        document.getElementById('exportMenu').style.display="block"
+      }  
+    }
+    //export log
+    function exportLog(){
+      document.getElementById('exportMenu').style.display="none"
+       if(!exportArr || exportArr.length == 0){
+         return;
+       }
+        let content = ""
+        let one = exportArr[0]
+        for(let key in one){
+          content+=key+","
+        }
+        content = content.slice(0,content.length-1)
+        content+="\n"
+        for(let i= 0;i<exportArr.length;i++){
+          content+=exportArr[i].time +","+"\t"+exportArr[i].input+"\n"
+        }
+        content+="\n"
+       let uri = 'data:text/csv;charset=utf-8,\ufeff'+encodeURIComponent(content);
+       let link = document.createElement('a')
+       link.href = uri
+       link.download = 'test.csv'
+       document.body.appendChild(link)
+       link.click()
+       document.body.removeChild(link)
+    }
+   
+    //get Time
+    function processTime(){
+      let tempTime = new Date()
+      let currentTime = tempTime.getFullYear()+'-'+ parseInt(tempTime.getMonth()+1)+'-'+tempTime.getDate()+" "+tempTime.getHours()+":"+tempTime.getMinutes()+":"+tempTime.getSeconds()+" "+tempTime.getMilliseconds()
+      return currentTime
+    }
+    //get exportArr
+    function getExportArr(key){
+      let obj = {
+        time:'',
+        input:''
+      }
+      obj.time = processTime()
+      obj.input = key
+      if(obj.input){
+        exportArr.push(obj)
+      }
+    }
+    //set white bg
+    function setWhite(){
+      document.getElementById('myCal').classList.add('whiteColor')
+      document.getElementById('settingBar').style.display="none"
+    }
+     //set black bg
+     function setBlack(){
+      document.getElementById('myCal').classList.remove('whiteColor')
+      document.getElementById('settingBar').style.display="none"
+
+      }  
+    //calculate
+    function apply(a, op, n) {
+      switch (op) {
+                case "+": return a = parseFloat(a) + parseFloat(n); 
+                case "-": return a = parseFloat(a) - parseFloat(n);
+                case "X": return a = parseFloat(a) * parseFloat(n);
+                case "/": return a = parseFloat(a) / parseFloat(n);
+            } 
+    }
+    //press num
+    function digitKey(key) {
+        ans += key;
+        num = ans;
+        display(ans);
+    }
+    //press dot
+    function pointKey(){
+      if(pointFlag){
+        digitKey('.')
+        pointFlag = false
+      }
+    }
+    function inputNumarr(){
+        initArray();
+      if (numArr[n][j] == undefined) {
+        numArr[n][j] = num;
+      }
+      getExportArr(parseFloat(ans))
+    }
+    //check opr
+    function checkOpr(inputOpr, oprArr) {
+      if (oprArr.includes(inputOpr)) {
+        return true;
+      }
+      return false;
+    }
+    //initial arr
+    function initArray() {
+      if (numArr[n] == undefined) {
+        numArr[n] = new Array();
+      }
+      if (oprArr[n] == undefined) {
+        oprArr[n] = new Array();
+      }
+    }
+    // push arr
+    function assignArray(inputNum, inputKey) {
+      numArr[n][j] = inputNum;
+      oprArr[n][j] = inputKey;
+    }
+    //press opr
+    function oprKey(key) {
+     //last input num
+     inputNumarr();
+ 
+      //+ -
+      if (checkOpr(key, ["+", "-"])) {
+        if (!oprArr[n][j]) {
+          oprArr[n][j] = key;
+        } else {
+          if (checkOpr(oprArr[n][j], ["X", "/"])) {
+            num = apply(numArr[n][j], oprArr[n][j], num);
+            if (j > 0) {
+              j = j - 1;
+              numArr[n].pop();
+              oprArr[n].pop();
+              num = apply(numArr[n][j], oprArr[n][j], num);
+            }
+            assignArray(num, key);
+            display(num);
+          } else {
+            num = apply(numArr[n][j], oprArr[n][j], num);
+            assignArray(num, key);
+            display(num);
+          }
+        }
+      }
+      // * /
+      if (checkOpr(key, ["X", "/"])) {
+        if (!oprArr[n][j]) {
+          oprArr[n][j] = key;
+        } else {
+          if (checkOpr(oprArr[n][j], ["X", "/"])) {
+            num = apply(numArr[n][j], oprArr[n][j], num);
+            assignArray(num, key);
+            display(num);
+          } else {
+            j = j + 1;
+            assignArray(num, key);
+          }
+        }
+      }
+      // （
+      if (checkOpr(key, ["("])) {
+        if (numArr[n][j] == undefined) {
+          assignArray(0, "+");
+        }
+        n = n + 1;
+        j =0;
+        initArray();
+      }
+      // ）
+      if (checkOpr(key, [")"])) {
+        for (let t = j; t > -1; --t) {
+          num = apply(numArr[n][t], oprArr[n][t], num);
+        }
+        n = n - 1;
+        j =numArr[n].length-1;
+        numArr.pop();
+        oprArr.pop();
+        //not sure 2*（5-3） is or not calculate the all or ()
+       /*if(checkOpr(oprArr[n][j], ["X", "/"])){
+          num = apply(numArr[n][j], oprArr[n][j], num);
+          n = n - 1;
+          j =numArr[n].length-1;
+          numArr.pop();
+          oprArr.pop();
+        }*/
+        display(num);
+      }
+      // =
+      if (checkOpr(key, ["="])) {
+        for (let m = n; m > -1; --m) {
+          j =numArr[n].length-1;
+          for (let t = j; t > -1; --t) {
+            num = apply(numArr[m][t], oprArr[m][t], num);
+          }
+        }
+        if(num){
+            display(num);
+        }else{
+            display(0)
+        }
+        
+        numArr = [];
+        oprArr = [];
+        n = 0;
+        j = 0;
+      }
+      ans =''
+      pointFlag = true
+      getExportArr(key)
+      console.info("numArr",numArr)
+      console.info('oprArr',oprArr)
+    }
+
+    function resetButton() {
+            opr = ' ';
+            num = null;
+            n = 0; //current layer
+            j = 0;
+            numArr = new Array();//num arr
+            oprArr = new Array();//opr arr
+            display(0)
+            ans = '';
+    }
+    function memoryButton(){
+      n = 0; //layer
+      j = 0;
+      opr = ' ';
+      numArr = new Array();//num arr
+      oprArr = new Array();//opr arr
+      digitKey(num);
+    }
+  </script>
+  <style>
+    html{
+      overflow: hidden;
+    }
+    body{
+        background: rgba(255,255,255,1);
+        overflow: hidden;
+    }
+    .calculator{
+        max-width:37.5rem;
+        max-height:75rem;
+        background: rgba(0,0,0,0.9);
+        border-radius: 20px;
+        padding: 20px 15px 20px 10px;
+    }
+    .calculator .menu-bar{
+      display: flex;
+      justify-content: space-between; 
+      position: relative;
+    }
+    .calculator .menu-bar img{
+        width: 2.5rem;
+        height: 2.5rem;
+        cursor: pointer;
+       }
+       .export-menu{
+        width: 10rem;
+        height: 6rem;
+        background-color: rgba(255,255,255,0.5);
+        z-index: 1;
+        position: absolute;
+        top:30px;
+        border-radius: 5px;
+        left: 0px;
+        text-align: center;
+        display: none;
+        cursor: pointer;
+       }
+       .export-menu .title{
+        color: #fff;
+        width: 8rem;
+        height: 3rem;
+        line-height: 3rem;
+        background-color:dodgerblue;
+        border-radius: 5px;
+        margin-top: 8px;
+        margin-left: 10px;
+       }
+    .set-menu{
+      width: 10rem;
+      height: 5rem;
+      background-color: rgba(255,255,255,0.5);
+      z-index: 1;
+      position: absolute;
+      right: -5px;
+      top:30px;
+      border-radius: 5px;
+      display: none;
+      padding: 5px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .set-menu .title{
+      font-family: sans-serif;
+      color: #000;
+    }
+    .set-menu  .white, .set-menu  .black{
+      width:3rem;
+      height: 1.5rem;
+      display: inline-block;
+      margin-top: 1rem;
+    }
+    .set-menu  .white{
+      background-color: #fff;
+      margin-right: 20px;
+    }
+    .set-menu  .black{
+      background-color: #000;
+    }
+    .output-box {
+      margin-top: 23rem;
+      margin-bottom: 3rem;
+      text-align: right;
+      padding-right: 10px;
+      border: none;
+      background: none;
+      width: 90%;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      font-family: sans-serif;
+    }
+    .basic-button{
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+    .basic-button input{
+      display: inline-block;
+      margin: 5px;
+      border-radius: 5px;
+      box-sizing: border-box;
+      border: none;
+      background-color: rgba(255,255,255,0.1);
+      text-align: center;
+      padding: 0px;
+      color: #fff;
+      min-width: 5.8rem;
+      min-height: 5.8rem;
+      cursor: pointer; 
+    }
+    .basic-button .opr-button{
+        background-color: rgba(255,255,255,0.5);
+    }
+    .basic-button .equal-button{
+        background-color: dodgerblue;
+    }
+
+    .whiteColor{
+      background: rgba(255,255,255,0.9);
+      border: 1px solid  dodgerblue;
+    }
+    .whiteColor .export-menu{
+      background-color: rgba(0,0,0,0.5);
+    }
+    .whiteColor .set-menu{
+      background-color: rgba(0,0,0,0.5);
+    }
+    .whiteColor .output-box {
+      color: #000;
+    }
+    .whiteColor .basic-button input{
+      background-color: rgba(0,0,0,0.1);
+      color: #000;
+    }
+    .whiteColor .basic-button .opr-button{
+        background-color: rgba(0,0,0,0.5);
+    }
+    .whiteColor .basic-button .equal-button{
+        background-color: dodgerblue;
+    }
+  </style>
+  </body>
+</html>

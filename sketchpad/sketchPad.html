@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en"  style="font-size: 10px;">
+  <head>
+    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>SketchPad</title>
+    <script  src="http://cdnjs.cloudflare.com/ajax/libs/fabric.js/2.4.6/fabric.min.js"></script>
+  </head>
+  <body class="sketch-pad">
+    <div class="sketch-panel">
+      <div>
+        <canvas id="canvas" width="800" height="450" style="border:1px solid #ccc"></canvas>
+        <div class="sketch-menu">
+            <div id ="freehand" class="menu-item " onclick="changeDrawFunc('freehand')"><img src='./img/freeline.png' alt="">freehand</div>
+            <div id ="line" class="menu-item active" onclick="changeDrawFunc('line')"><img src='./img/line.png' alt="">line</div>
+            <div id ="rectangle" class="menu-item" onclick="changeDrawFunc('rectangle')"><img src='./img/rectangle.png' alt="">rectangle</div>
+            <div id ="square" class="menu-item" onclick="changeDrawFunc('square')"><img src='./img/square.png' alt="">square</div>
+            <div id ="ellipse" class="menu-item" onclick="changeDrawFunc('ellipse')"><img src='./img/ellipse.png' alt="">ellipse</div>
+            <div id ="circle" class="menu-item" onclick="changeDrawFunc('circle')"><img src='./img/circle.png' alt="">circle</div>
+            <div id ="polygon" class="menu-item" onclick="changeDrawFunc('polygon')"><img src='./img/ploygen.png' alt="">polygon</div>
+        </div>
+      </div>
+      <div class="option-menu">
+        <div class="menu-item">
+          <input id="color" class="color-choice" type="color" onchange="getColorValue()">color
+        </div>
+        <div id ="move" class="menu-item" onclick="moveObject()">move</div>
+        <div id ="copy" class="menu-item" onclick="copyObject()">copy</div>
+        <div id ="cut" class="menu-item" onclick="cutObject()">cut</div>
+        <div id ="paste" class="menu-item" onclick="pasteObject()">paste</div>
+        <div id ="delete" class="menu-item" onclick="deleteObject()">delete</div>
+        <div id ="group" class="menu-item" onclick="groupObject()">group</div>
+        <div id ="ungroup" class="menu-item" onclick="ungroupObject()">ungroup</div>
+        <div id ="undo" class="menu-item" onclick="undoFun()">undo</div>
+        <div id ="save" class="menu-item" onclick="saveObject()">save</div>
+        <div class="menu-item">
+          <input  id ="upload" class="upload-panel" type="file" id="upfile" />upload
+        </div>
+    </div>
+
+    </div>
+   
+   
+   <script>
+     //(function() {
+        //define variable
+        var drawFlag = false
+        var mouseFrom = {}
+        var mouseTo = {}
+        var drawingObject = null
+        var drawColor ="#999"
+        var polygonPoints = [];//save polygon point
+        var _clipboard = null
+        var canvasHistory = []
+        var  isSaveFlag = false
+       
+        var fabricObj = new fabric.Canvas('canvas',{
+          isDrawingMode: false,
+          selectable: false,
+          selection: false,
+          devicePixelRatio:true, 
+         });
+         initial()
+
+
+        function initial(){
+          if(judgeCurrentTool()=='polygon'){
+           drawPolygon()
+          }else{
+           fabricObjAddEvent()
+          }
+        }
+        //change button set active
+        function changeDrawFunc(idName){
+          const menuItems =document.querySelectorAll('.menu-item')
+              menuItems.forEach(item=>{
+                item.classList.remove('active');
+              })
+              document.getElementById(''+idName).classList.add('active')
+            fabricObjAddEvent()
+        }
+        //change color
+       function getColorValue(){ 
+        drawColor = document.getElementById("color").value
+       }
+        //current tool
+       function judgeCurrentTool(){
+        var activeItems = Array.from(document.querySelectorAll('.menu-item.active'));
+        var activeItemContents = activeItems.map(function(item) { 
+          return item.textContent
+        });
+        return activeItemContents[0]
+      }
+      
+        //mouse controll event
+        function fabricObjAddEvent(){
+          fabricObj.on({
+            'mouse:down': (o)=> {
+            mouseFrom.x = o.pointer.x;
+            mouseFrom.y = o.pointer.y;
+            drawFlag = true; 
+          },   
+          'mouse:up': (o)=> {
+            mouseTo.x = o.pointer.x;
+            mouseTo.y = o.pointer.y;
+            drawFlag = false;
+            drawingObject = null;
+            if(isSaveFlag){
+              saveHistory(true)
+            }
+            isSaveFlag = false
+          },
+          'mouse:move': (o)=> {
+            if (!drawFlag) {
+              return
+            }
+           mouseTo.x = o.pointer.x;
+           mouseTo.y = o.pointer.y;
+           drawing()
+           isSaveFlag = true
+          },
+          'object:modified':(o)=>{
+            if(isSaveFlag){
+              saveHistory(true)
+            }
+            isSaveFlag = false
+           }
+          })
+          
+        }
+        //controll draw function
+        function drawing(){
+          if(drawingObject) {
+            fabricObj.remove(drawingObject)
+           }
+           fabricObj.isDrawingMode = false
+          let  tempTool =judgeCurrentTool()
+          switch (tempTool) {
+            case 'freehand':
+             drawFreeLine()
+            break;
+            case 'line':
+             drawLine()
+            break;
+            case 'rectangle':
+             drawRectangle()
+            break;
+            case 'square':
+             drawsquare()
+            break;
+            case 'ellipse':
+             drawEllipse()
+            break;
+            case 'circle':
+            drawCircle()
+            break;
+            case 'polygon':
+            drawPolygon()
+            break;
+          }
+        }
+      
+        //draw freehand lines 
+        function drawFreeLine(){
+          if(drawingObject) {
+          fabricObj.remove(drawingObject)
+        }
+        let freeLine = null
+          fabricObj.isDrawingMode = true
+        }
+        // draw line
+        function drawLine(){
+          if(drawingObject) {
+          fabricObj.remove(drawingObject)
+        }
+         let line = null
+         line = new fabric.Line([mouseFrom.x,mouseFrom.y,mouseTo.x,mouseTo.y],{
+          stroke: drawColor,
+          strokeWidth:2,
+          selectable:false
+          });
+          if(line){
+          fabricObj.add(line);
+           drawingObject = line
+        }
+      }
+        //draw rectangle
+        function drawRectangle(){
+          let rect = null
+          rect =   new fabric.Rect({
+          left: mouseFrom.x,
+          top: mouseFrom.y,
+          width: mouseTo.x - mouseFrom.x,
+          height: mouseTo.y - mouseFrom.y,
+          fill: drawColor,
+          stroke: drawColor,
+          strokeWidth: 2,
+          selectable:false
+        });
+        if(rect){
+          fabricObj.add(rect);
+           drawingObject = rect
+        }
+        }
+        //draw square
+        function drawsquare(){
+          let square = null
+          let left = Math.min(mouseFrom.x, mouseTo.x);
+          let top = Math.min(mouseFrom.y, mouseTo.y);
+          let size = Math.abs(mouseFrom.x - mouseTo.x);
+          square =  new fabric.Rect({
+          left: left,
+          top: top,
+          width: size,
+          height: size,
+          fill: drawColor,
+          stroke: drawColor,
+          strokeWidth: 2,
+          selectable:false
+        });
+        if(square){
+          fabricObj.add(square);
+           drawingObject = square
+        }
+
+        }
+        //draw ellipse
+        function drawEllipse(){
+        let left = mouseFrom.x
+        let top = mouseFrom.y
+        let ellipse = null
+        ellipse = new fabric.Ellipse({
+          left: left,
+          top: top,
+          stroke:drawColor,
+          fill: drawColor,
+          originX: "center",
+          originY: "center",
+          rx: Math.abs(left - mouseTo.x),
+          ry: Math.abs(top - mouseTo.y),
+          strokeWidth:2,
+          selectable:false
+        });
+        if(ellipse){
+          fabricObj.add(ellipse);
+           drawingObject = ellipse
+        }
+      }
+        //draw circle
+        function drawCircle(){
+          let radius = Math.sqrt((mouseTo.x - mouseFrom.x) * (mouseTo.x - mouseFrom.x) + (mouseTo.y - mouseFrom.y) * (mouseTo.y - mouseFrom.y)) / 2;
+          let centerX = (mouseFrom.x + mouseTo.x) / 2;
+          let centerY = (mouseFrom.y + mouseTo.y) / 2;
+          let circle = null
+       
+        circle = new fabric.Circle({
+          left: centerX - radius,
+          top: centerY - radius,
+          stroke: drawColor,
+          fill: drawColor,
+          radius: radius,
+          strokeWidth: 2,
+          selectable:false
+        });
+        if(circle){
+          fabricObj.add(circle);
+           drawingObject = circle
+        }
+      }
+        //draw open and closed polygons come up by draw line
+        function drawPolygon(){
+         drawLine()
+        }
+        //move object
+        function moveObject(){
+          fabricObj.isDrawingMode = false
+          fabricObj.selectable= true
+          fabricObj.selection = true
+          fabricObj.forEachObject(function (obj) {
+            obj.set({
+              selectable:true,
+              evented:true
+            })
+            obj.setCoords();
+          });
+          fabricObj.off('mouse:move');
+        }
+        //copy object
+        function copyObject(){
+           moveObject();
+           if(fabricObj.getActiveObject()){
+             fabricObj.getActiveObject().clone(function(cloned) {
+             _clipboard = cloned;
+            });
+           }
+        }
+        //paste object
+        function pasteObject(){
+          _clipboard.clone(function(clonedObj) {
+            fabricObj.discardActiveObject();
+            clonedObj.set({
+              left: clonedObj.left + 20,
+              top: clonedObj.top + 20,
+              evented: true,
+            });
+           
+            fabricObj.add(clonedObj);
+	        	
+	        	_clipboard.top += 20;
+            _clipboard.left += 20;
+            fabricObj.setActiveObject(clonedObj);
+            fabricObj.requestRenderAll();
+	          });
+       }
+       //cut object
+        function cutObject(){
+          copyObject()
+          if(fabricObj.getActiveObject()){
+            fabricObj.remove(fabricObj.getActiveObject())
+          }
+          
+        }
+        //delete object
+        function deleteObject(){
+          if(fabricObj.getActiveObject()){
+           let choice = confirm("Are you sure you want to delete the selected objects?")
+           if(choice){
+            fabricObj.remove(fabricObj.getActiveObject())
+            }
+           }else{
+            let choice = confirm("Are you sure you want to delete all the objects?")
+           if(choice){
+            fabricObj.clear()
+            }
+           }
+        }
+     //group object
+     function groupObject(){
+          fabricObj.isDrawingMode = false
+          fabricObj.selectable= true
+          fabricObj.selection = true
+          fabricObj.forEachObject(function (obj) {
+            obj.set({
+              selectable:true,
+              selection:true,
+              evented:true
+            })
+            obj.setCoords();
+          });
+          fabricObj.off('mouse:move');
+         let objs =  fabricObj.getActiveObjects()
+         var group = new fabric.Group(objs, {
+          left: 10,
+          top: 20
+        });
+        fabricObj.add(group);
+        objs.forEach(function(obj) {
+          fabricObj.remove(obj);
+        });
+        fabricObj.renderAll();
+       
+     }
+     //ungroup object
+     function ungroupObject(){
+      let selectObj = fabricObj.getActiveObject();
+       if (selectObj && selectObj.type === 'group') {
+         selectObj.toActiveSelection();
+       }
+       fabricObj.discardActiveObject()
+       fabricObj.renderAll();
+     }
+     //save history
+     function saveHistory(history){
+      if(history){
+        canvasHistory.push(fabricObj.toJSON())
+        console.log("111",canvasHistory)
+      }
+
+     }
+     //undoFun
+     function undoFun(){
+      console.log("111",canvasHistory)
+      if(canvasHistory.length>1){
+        canvasHistory.pop();
+        var prevState = canvasHistory[canvasHistory.length - 1];
+        fabricObj.loadFromJSON(prevState, function() {
+           fabricObj.renderAll();
+          });
+        }
+     }
+     //save object
+     function saveObject(){
+      let jsonObj  = fabricObj.toJSON()
+      if(jsonObj.objects.length>0){
+      var jsonString = JSON.stringify(jsonObj, null, 2);
+      var blob = new Blob([jsonString], { type: "application/json" });
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement('a')
+       link.href = url
+       link.download = 'canvas.json'
+       document.body.appendChild(link)
+       link.click()
+       document.body.removeChild(link)
+      }
+
+      //render obj
+      //fabricObj.clear();
+      // setTimeout(function(){
+      //   fabricObj.loadFromJSON(jsonObj, function() {
+      //    fabricObj.renderAll();
+      //   });
+      // },1000)
+     
+     }
+     //upload
+     document.getElementById("upload").addEventListener("change", function (event) {
+      var file = event.target.files[0]
+      var reader = new FileReader()
+      reader.onload = function (event) {
+      var jsonContent = event.target.result
+      var jsonObject = JSON.parse(jsonContent)
+      fabricObj.clear()
+      fabricObj.loadFromJSON(jsonObject, function () {
+        fabricObj.renderAll()
+      })
+    }
+     reader.readAsText(file)
+    })
+       
+      
+       
+      //})();
+    </script>
+    <style>
+      html{
+          overflow: hidden;
+       }
+     body{
+        background: rgba(255,255,255,1);
+        overflow: hidden;
+      }
+      .sketch-pad{
+        cursor: pointer;
+      }
+      .sketch-panel{
+        display: flex;
+
+      }
+      .sketch-menu{
+        max-width: 800px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+     .menu-item{
+        width:10rem;
+        text-align: center;
+        font-size: 14px;
+        color:#fff;
+        line-height:5rem;
+        background-color: rgba(0,0,0,0.3);
+        margin:5px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .option-menu  .menu-item{
+        line-height: 4rem;
+      }
+      .menu-item img{
+        width:20px;
+        height:20px;
+        margin-right: 5px;
+      }
+      .color-choice{
+        margin-right: 5px;
+      }
+      .active{
+        background-color: orange;
+      }
+      #upload{
+        position: relative;
+      }
+    </style>
+  </body>
+</html>
